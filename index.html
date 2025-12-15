@@ -5,58 +5,90 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Face Recognition (OpenCV.js WebAssembly + Benchmark)</title>
 <style>
+  /* ===== THEME: Paper / Scientific Screenshot ===== */
   :root{
-    --bg:#0f1720;
-    --panel:#0b1220;
-    --panel2:#071623;
-    --text:#e6eef6;
-    --muted:#8fa4bf;
-    --btn:#2b6cb0;
-    --btn2:#334155;
-    --border:#1b2b48;
+    --page:#ffffff;
+    --panel:#ffffff;
+    --panel2:#f6f8fb;
+    --text:#111827;      /* hampir hitam */
+    --muted:#4b5563;     /* abu */
+    --border:#d1d5db;    /* abu garis */
+    --accent:#2563eb;    /* biru */
+    --accent2:#0f172a;   /* gelap untuk judul */
+    --btn:#2563eb;
+    --btn2:#374151;
+    --btnText:#ffffff;
+    --chip:#eef2ff;
+    --chipText:#1e3a8a;
   }
+
   *{box-sizing:border-box}
   body{
     margin:16px;
-    background:var(--bg);
+    background:var(--page);
     color:var(--text);
     font:14px/1.55 system-ui,Segoe UI,Roboto,Arial;
   }
+
+  /* card dibuat lebar agar seluruh tampilan mudah di-capture */
   .card{
-    max-width:1100px;
+    width:min(1280px, 100%);
     margin:auto;
     background:var(--panel);
     border:1px solid var(--border);
-    border-radius:14px;
-    padding:16px;
-    box-shadow:0 10px 24px rgba(0,0,0,.5);
+    border-radius:12px;
+    padding:14px;
+    box-shadow:none; /* hindari shadow untuk paper */
   }
-  h2{margin:0 0 10px}
+
+  h2{
+    margin:0 0 10px;
+    color:var(--accent2);
+    font-weight:700;
+    letter-spacing:.2px;
+  }
+
   .muted{color:var(--muted)}
-  label{display:block;margin:.5rem 0 .2rem;color:#9fb0c9}
+  label{display:block;margin:.45rem 0 .2rem;color:#374151;font-weight:600}
+
   input,select,textarea{
     width:100%;
     padding:8px;
     border-radius:8px;
-    border:1px solid #20314a;
+    border:1px solid var(--border);
     background:var(--panel2);
-    color:#dfeefc;
+    color:var(--text);
     font:13px system-ui,Segoe UI,Roboto,Arial;
   }
-  textarea{resize:vertical;min-height:80px}
+
+  /* supaya data benchmark dan penjelasan terlihat jelas */
+  textarea{
+    resize:vertical;
+    min-height:160px;
+    line-height:1.35;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    font-size:12px;
+  }
+
   button{
     padding:8px 12px;
-    border:0;
+    border:1px solid transparent;
     border-radius:10px;
     background:var(--btn);
-    color:#fff;
+    color:var(--btnText);
     cursor:pointer;
+    font-weight:700;
   }
-  button.secondary{background:var(--btn2)}
+  button.secondary{
+    background:#ffffff;
+    color:var(--text);
+    border-color:var(--border);
+  }
   button:disabled{opacity:.6;cursor:not-allowed}
+
   .grid{
     display:grid;
-    grid-template-columns:1fr 140px 140px 220px;
+    grid-template-columns:1fr 160px 170px 260px;
     gap:10px;
   }
   .row{
@@ -65,71 +97,97 @@
     flex-wrap:wrap;
     align-items:end;
   }
+
   .pill{
     display:inline-block;
     padding:4px 8px;
     border-radius:999px;
-    background:#1a2a44;
+    background:var(--chip);
+    color:var(--chipText);
+    border:1px solid #c7d2fe;
     margin-left:6px;
     font-size:12px;
+    font-weight:700;
   }
-  pre{white-space:pre-wrap}
 
-  /* ===== Side-by-side layout ===== */
+  pre{
+    white-space:pre-wrap;
+    background:#ffffff;
+    border:1px dashed var(--border);
+    border-radius:10px;
+    padding:10px;
+    color:#111827;
+  }
+
+  /* ===== Side-by-side layout (cam & benchmark) ===== */
   #display-area{
     display:flex;
     gap:12px;
     align-items:flex-start;
     justify-content:space-between;
-    flex-wrap:wrap; /* responsif */
+    flex-wrap:wrap;
     margin-top:8px;
   }
+
   .pane{
-    flex:1 1 520px; /* min lebar sebelum wrap */
-    background:#081425;
-    border:1px solid #152642;
+    flex:1 1 560px;
+    background:#ffffff;
+    border:1px solid var(--border);
     border-radius:12px;
     padding:10px;
   }
+
   .pane h3{
     margin:0 0 8px;
     font-size:13px;
-    color:#cfe2ff;
-    font-weight:600;
+    color:#111827;
+    font-weight:800;
   }
 
-  /* kamera */
+  /* Kamera */
   #video{
     width:100%;
     border-radius:10px;
     margin:6px 0 10px;
     display:none;
-    opacity:.75;
+    opacity:.9;
     background:#000;
+    border:1px solid var(--border);
   }
   #canvas{
     width:100%;
     border-radius:10px;
     background:#000;
     display:block;
+    border:1px solid var(--border);
   }
 
-  /* benchmark */
+  /* Benchmark chart */
   #benchSvg{
     width:100%;
-    height:180px;
-    background:#020617;
+    height:220px; /* lebih tinggi agar terbaca di screenshot jurnal */
+    background:#ffffff;
+    border:1px solid var(--border);
     border-radius:10px;
     margin-top:6px;
     display:block;
   }
 
-  /* layar kecil: jadikan 1 kolom */
-  @media (max-width: 900px){
+  /* Responsif */
+  @media (max-width: 980px){
     .grid{ grid-template-columns:1fr 1fr; }
   }
   @media (max-width: 520px){
     .grid{ grid-template-columns:1fr; }
+  }
+
+  /* Print-friendly (PDF / capture untuk artikel) */
+  @media print{
+    body{ margin:0; }
+    .card{ width:100%; border:none; padding:0; }
+    button, input[type="file"]{ display:none !important; } /* tombol tidak perlu di paper */
+    textarea{ min-height:220px; }
+    #benchSvg{ height:260px; }
   }
 </style>
 </head>
@@ -172,7 +230,7 @@
       <div class="row">
         <button id="start" disabled>Start</button>
         <button id="stop" class="secondary" disabled>Stop</button>
-        <label style="display:flex;gap:6px;align-items:center;color:#9fb0c9">
+        <label style="display:flex;gap:6px;align-items:center;color:#374151;font-weight:700">
           <input type="checkbox" id="showVideo"> preview video
         </label>
       </div>
@@ -200,7 +258,7 @@
         <button id="enroll" class="secondary" disabled>Enroll</button>
         <button id="clearDb" class="secondary">Clear DB</button>
         <button id="exportDb" class="secondary">Export</button>
-        <label class="secondary" style="padding:8px 12px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;background:#334155">
+        <label class="secondary" style="padding:8px 12px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;background:#ffffff;border:1px solid var(--border);font-weight:800">
           Import
           <input id="importDb" type="file" accept="application/json" style="display:none">
         </label>
@@ -209,7 +267,6 @@
 
     <p class="muted" id="status">Status: memuat OpenCV.js (WebAssembly)…</p>
 
-    <!-- ===== Side-by-side panes ===== -->
     <div id="display-area">
       <div class="pane" id="paneCam">
         <h3>Camera & Detection</h3>
@@ -237,14 +294,13 @@
       Jika score ≥ threshold, pemindaian dihentikan dan log ditulis ke console + panel.
       Benchmark & chart menampilkan 50 frame terakhir secara real-time.
     </p>
+
     <pre id="log" class="muted"></pre>
   </div>
 
-  <!-- OpenCV.js 4.x: build WebAssembly -->
   <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady()"></script>
 
   <script>
-  // ===== DOM refs & util UI =====
   const $ = (id)=>document.getElementById(id);
   const camSel    = $("camera");
   const nthEl     = $("nth");
@@ -267,7 +323,6 @@
   const canvas   = $("canvas");
   const ctx      = canvas.getContext('2d');
 
-  // Benchmark DOM
   const benchEl        = $("bench");
   const benchInfoEl    = $("benchInfo");
   const benchSvg       = $("benchSvg");
@@ -276,10 +331,9 @@
 
   const log = (...a)=>{
     console.log(...a);
-    logEl.textContent = a.join(" ") + "\n" + logEl.textContent.slice(0,2000);
+    logEl.textContent = a.join(" ") + "\n" + logEl.textContent.slice(0,3000);
   };
 
-  // ===== RECOGNITION core (LBP + cosine) =====
   let stream=null, running=false, rafId=null;
   let enrolling=false, enrollLeft=0, enrollSum=null;
   let detectEveryN=2, frameIndex=0, facesCount=0;
@@ -287,7 +341,6 @@
   let classifier=null, gray=null, rgba=null;
 
   const cascadeURL='https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_alt2.xml';
-
   const DB_KEY='face_db';
   const LBP_SIZE=100;
 
@@ -345,21 +398,27 @@
     return dot/(Math.sqrt(na)*Math.sqrt(nb)+1e-9);
   }
 
-  // ===== Benchmark data & helpers =====
   const benchData = [];
   const MAX_BENCH = 50;
+
+  function autosizeBench(){
+    // biar isi benchmark terlihat banyak saat capture
+    benchEl.style.height = "auto";
+    benchEl.style.height = Math.min(420, benchEl.scrollHeight + 2) + "px";
+  }
 
   function benchAdd(dt){
     benchData.push(dt);
     if(benchData.length>MAX_BENCH) benchData.shift();
     updateBenchText();
-    renderBenchChart(); // realtime
+    renderBenchChart();
   }
 
   function updateBenchText(){
     if(!benchData.length){
       benchEl.value = "";
       benchInfoEl.textContent = "Belum ada data benchmark.";
+      autosizeBench();
       return;
     }
     const n = benchData.length;
@@ -372,6 +431,7 @@
     benchEl.value = benchData.map((v,i)=>`${i+1},${v.toFixed(2)}`).join("\n");
     benchInfoEl.textContent =
       `samples: ${n} (maks ${MAX_BENCH}), avg: ${avg.toFixed(2)} ms, min: ${min.toFixed(2)} ms, max: ${max.toFixed(2)} ms`;
+    autosizeBench();
   }
 
   function renderBenchChart(){
@@ -381,78 +441,78 @@
     if(!benchData.length) return;
 
     const w = svg.clientWidth || 800;
-    const h = svg.clientHeight || 180;
+    const h = svg.clientHeight || 220;
     const n = benchData.length;
     const vmax = Math.max(...benchData);
 
-    const paddingLeft = 34;
-    const paddingBottom = 20;
-    const usableW = w - paddingLeft - 6;
-    const usableH = h - paddingBottom - 10;
+    const paddingLeft = 40;
+    const paddingBottom = 24;
+    const usableW = w - paddingLeft - 10;
+    const usableH = h - paddingBottom - 20;
     const barW = Math.max(1, usableW / n);
 
     const bg = document.createElementNS(ns,"rect");
     bg.setAttribute("x",0); bg.setAttribute("y",0);
     bg.setAttribute("width",w); bg.setAttribute("height",h);
-    bg.setAttribute("fill","#020617");
+    bg.setAttribute("fill","#ffffff");
     svg.appendChild(bg);
 
-    // bars
+    // bars (biru standar paper)
     for(let i=0;i<n;i++){
       const v = benchData[i];
       const bh = (v/vmax)*usableH;
       const rect = document.createElementNS(ns,"rect");
       rect.setAttribute("x", paddingLeft + i*barW);
       rect.setAttribute("y", h - paddingBottom - bh);
-      rect.setAttribute("width", Math.max(1, barW*0.9));
+      rect.setAttribute("width", Math.max(1, barW*0.85));
       rect.setAttribute("height", bh);
-      rect.setAttribute("fill", "#38bdf8");
+      rect.setAttribute("fill", "#2563eb");
       svg.appendChild(rect);
     }
 
     // axes
     const axisY = document.createElementNS(ns,"line");
     axisY.setAttribute("x1", paddingLeft);
-    axisY.setAttribute("y1", 8);
+    axisY.setAttribute("y1", 12);
     axisY.setAttribute("x2", paddingLeft);
     axisY.setAttribute("y2", h - paddingBottom);
-    axisY.setAttribute("stroke","#64748b");
+    axisY.setAttribute("stroke","#6b7280");
     axisY.setAttribute("stroke-width","1");
     svg.appendChild(axisY);
 
     const axisX = document.createElementNS(ns,"line");
     axisX.setAttribute("x1", paddingLeft);
     axisX.setAttribute("y1", h - paddingBottom);
-    axisX.setAttribute("x2", w - 6);
+    axisX.setAttribute("x2", w - 10);
     axisX.setAttribute("y2", h - paddingBottom);
-    axisX.setAttribute("stroke","#64748b");
+    axisX.setAttribute("stroke","#6b7280");
     axisX.setAttribute("stroke-width","1");
     svg.appendChild(axisX);
 
-    // labels
+    const title = document.createElementNS(ns,"text");
+    title.textContent = "Benchmark: ms per processed frame (50 terbaru)";
+    title.setAttribute("x",paddingLeft);
+    title.setAttribute("y",18);
+    title.setAttribute("fill","#111827");
+    title.setAttribute("font-size","12");
+    title.setAttribute("font-weight","700");
+    svg.appendChild(title);
+
     const tMax = document.createElementNS(ns,"text");
     tMax.textContent = `${vmax.toFixed(1)} ms`;
-    tMax.setAttribute("x",6);
-    tMax.setAttribute("y",14);
-    tMax.setAttribute("fill","#94a3b8");
-    tMax.setAttribute("font-size","10");
+    tMax.setAttribute("x",8);
+    tMax.setAttribute("y",30);
+    tMax.setAttribute("fill","#374151");
+    tMax.setAttribute("font-size","11");
     svg.appendChild(tMax);
 
     const t0 = document.createElementNS(ns,"text");
     t0.textContent = "0";
-    t0.setAttribute("x",10);
-    t0.setAttribute("y",h - paddingBottom);
-    t0.setAttribute("fill","#94a3b8");
-    t0.setAttribute("font-size","10");
+    t0.setAttribute("x",14);
+    t0.setAttribute("y",h - paddingBottom + 12);
+    t0.setAttribute("fill","#374151");
+    t0.setAttribute("font-size","11");
     svg.appendChild(t0);
-
-    const title = document.createElementNS(ns,"text");
-    title.textContent = "Benchmark: ms per processed frame (50 terbaru)";
-    title.setAttribute("x",paddingLeft+4);
-    title.setAttribute("y",16);
-    title.setAttribute("fill","#e5e7eb");
-    title.setAttribute("font-size","11");
-    svg.appendChild(title);
   }
 
   btnRenderChart.onclick = renderBenchChart;
@@ -462,7 +522,6 @@
     while(benchSvg.firstChild) benchSvg.removeChild(benchSvg.firstChild);
   };
 
-  // ===== OpenCV init (WebAssembly) =====
   function onOpenCvReady(){
     if(window.cv && cv.getBuildInformation){
       initOpenCV();
@@ -494,7 +553,6 @@
     }
   }
 
-  // ===== Camera =====
   async function fillCameraList(){
     const devices = await navigator.mediaDevices.enumerateDevices();
     const cams = devices.filter(d=>d.kind==='videoinput');
@@ -513,8 +571,7 @@
   }
   function setCanvasSize(v){
     const {w,h} = parseSize(v);
-    canvas.width=w;
-    canvas.height=h;
+    canvas.width=w; canvas.height=h;
   }
 
   async function startCamera(){
@@ -551,7 +608,6 @@
     video.srcObject=null;
   }
 
-  // ===== Stop saat VERIFIED =====
   function stopOnVerified(match){
     if(!running) return;
     running = false;
@@ -567,7 +623,6 @@
     statusEl.textContent = `Status: ${msg}`;
   }
 
-  // ===== UI handlers =====
   btnS.onclick = async ()=>{
     if(!classifier){
       alert('OpenCV WebAssembly belum siap.');
@@ -640,7 +695,6 @@
     }
   };
 
-  // ===== Main loop (detect+recognize+benchmark) =====
   function startLoop(){
     if(rgba){ rgba.delete(); rgba=null; }
     if(gray){ gray.delete(); gray=null; }
@@ -675,11 +729,7 @@
             cv.cvtColor(rgba, gray, cv.COLOR_RGBA2GRAY);
             cv.equalizeHist(gray, gray);
 
-            classifier.detectMultiScale(
-              gray, faces,
-              1.1, 5, 0,
-              new cv.Size(60,60)
-            );
+            classifier.detectMultiScale(gray, faces, 1.1, 5, 0, new cv.Size(60,60));
             facesCount = faces.size();
 
             let displayText='';
@@ -726,10 +776,10 @@
                 }
               }
 
-              ctx.lineWidth = Math.max(2, Math.round(canvas.width/200));
+              ctx.lineWidth = Math.max(2, Math.round(canvas.width/220));
               for(let i=0;i<faces.size();i++){
                 const rr=faces.get(i);
-                ctx.strokeStyle = i===bi ? '#00ff66' : '#66a3ff';
+                ctx.strokeStyle = i===bi ? '#22c55e' : '#3b82f6'; /* hijau/biru standar */
                 ctx.strokeRect(rr.x, rr.y, rr.width, rr.height);
               }
 
@@ -737,10 +787,10 @@
                 const rr=faces.get(bi);
                 ctx.save();
                 ctx.font='14px system-ui,Segoe UI,Roboto,Arial';
-                ctx.fillStyle='rgba(0,0,0,.55)';
+                ctx.fillStyle='rgba(255,255,255,.75)';
                 const tw=ctx.measureText(displayText).width+14;
                 ctx.fillRect(rr.x, Math.max(2, rr.y-22), tw, 20);
-                ctx.fillStyle='#fff';
+                ctx.fillStyle='#111827';
                 ctx.fillText(displayText, rr.x+7, Math.max(16, rr.y-7));
                 ctx.restore();
               }
@@ -770,7 +820,6 @@
     };
 
     const scheduleNext = ()=>{
-      // FIX: cek pada instance video, bukan HTMLVideoElement.prototype
       if(typeof video.requestVideoFrameCallback === "function"){
         video.requestVideoFrameCallback(()=>step());
       }else{
@@ -790,18 +839,16 @@
     ctx.save();
     ctx.font='14px system-ui,Segoe UI,Roboto,Arial';
 
-    const w=Math.max(
-      ctx.measureText(t1).width,
-      ctx.measureText(t2).width,
-      ctx.measureText(t3).width
-    ) + pad*2;
-
+    const w=Math.max(ctx.measureText(t1).width, ctx.measureText(t2).width, ctx.measureText(t3).width) + pad*2;
     const lines = enrolling ? 3 : 2;
     const h = lines*line + pad*2;
 
-    ctx.fillStyle='rgba(0,0,0,.35)';
+    ctx.fillStyle='rgba(255,255,255,.70)';
     ctx.fillRect(pad,pad,w,h);
-    ctx.fillStyle='#e6eef6';
+    ctx.strokeStyle='rgba(17,24,39,.35)';
+    ctx.strokeRect(pad,pad,w,h);
+
+    ctx.fillStyle='#111827';
     ctx.fillText(t1, pad*2, pad+line);
     ctx.fillText(t2, pad*2, pad+line*2);
     if(enrolling) ctx.fillText(t3, pad*2, pad+line*3);
