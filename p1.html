@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Face Recognition CRUD + Benchmark (OpenCV.js)</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- OpenCV.js -->
+  <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+
+  <style>
+    video, canvas {
+      border-radius: 0.75rem;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 p-6">
+
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- VIDEO PANEL -->
+  <div class="bg-white p-4 rounded-xl shadow">
+    <h2 class="text-xl font-bold mb-2">Webcam</h2>
+    <video id="video" width="480" height="360" autoplay muted></video>
+    <canvas id="canvas" width="480" height="360" class="mt-2"></canvas>
+
+    <div class="mt-4 flex gap-2">
+      <input id="labelInput" class="border p-2 rounded w-full" placeholder="Nama / Label Wajah">
+      <button onclick="captureFace()" class="bg-blue-600 text-white px-4 rounded">
+        Capture
+      </button>
+    </div>
+  </div>
+
+  <!-- DATABASE PANEL -->
+  <div class="bg-white p-4 rounded-xl shadow">
+    <h2 class="text-xl font-bold mb-2">Database Wajah (localStorage)</h2>
+    <div id="faceList" class="space-y-2"></div>
+  </div>
+
+</div>
+
+<!-- BENCHMARK -->
+<div class="max-w-7xl mx-auto mt-6 bg-white p-4 rounded-xl shadow">
+  <h2 class="text-xl font-bold mb-4">Benchmark Penyimpanan Gambar</h2>
+  <button onclick="runBenchmark()" class="bg-green-600 text-white px-4 py-2 rounded">
+    Run Benchmark Test
+  </button>
+
+  <table class="w-full mt-4 border text-sm">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="border p-2">Metode</th>
+        <th class="border p-2">Waktu (ms)</th>
+        <th class="border p-2">Estimasi Ukuran</th>
+      </tr>
+    </thead>
+    <tbody id="benchmarkTable"></tbody>
+  </table>
+</div>
+
+<script>
+/* ===============================
+   GLOBAL STATE
+================================ */
+let video = document.getElementById('video');
+let canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
+let cap, classifier;
+let facesDB = JSON.parse(localStorage.getItem('facesDB')) || { faces: [] };
+
+/* ===============================
+   INIT CAMERA
+================================ */
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream);
+
+function waitForCV() {
+  if (cv && cv.imread) initCV();
+  else setTimeout(waitForCV, 100);
+}
+waitForCV();
+
+function initCV() {
+  cap = new cv.VideoCapture(video);
+  classifier = new cv.CascadeClassifier();
+  classifier.load(
+    'https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml'
+  );
+  requestAnimationFrame(processVideo);
+}
+
+/* ===============================
+   VIDEO LOOP
+================================ */
+function processVideo() {
+  let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+  let gray = new cv.Mat();
+  cap.read(src);
+  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+  let faces = new cv.RectVector();
+  classifier.detectMultiScale(gray, faces, 1.2, 3, 0);
+
+  for (let i = 0; i < faces.size(); i++) {
+    let f = faces.get(i);
+    cv.rectangle(src,
+      new cv.Point(f.x, f.y),
+      new cv.Point(f.x + f.width, f.y + f.height),
+      [255, 0, 0, 255], 2
+    );
+  }
+
+  cv.imshow(canvas, src);
+  src.delete(); gray.delete(); faces.delete();
+
+  requestAnimationFrame(processVideo);
+}
+
+/* ===============================
+   FEATURE EXTRACTION
+================================ */
+function extractHistogram(faceMat) {
+  let hist = new cv.Mat();
+  let mask = new cv.Mat();
+  let channels = [0];
+  let histSize = [32];
+  let ranges = [0, 256];
+
+  cv.calcHist(faceMat, channels, mask, hist, histSize, ranges);
+  cv.normalize(hist, hist);
+
+  return Array.from(hist.data32F);
+}
+
+/* ===============================
+   CRUD OPERATIONS
+================================ */
+function captureFace() {
+  let label = labelInput.value.trim();
+  if (!label) return alert("Masukkan label!");
+
+  let src = cv.imread(canvas);
+  let gray = new cv.Mat();
+  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+  let faces = new cv.RectVector();
+  classifier.detectMultiScale(gray, faces);
+
+  if (faces.size() === 0) {
+    alert("Wajah tidak terdeteksi");
+    return;
+  }
+
+  let f = faces.get(0);
+  let roi = gray.roi(f);
+  let features = extractHistogram(roi);
+
+  facesDB.faces.push({
+    id: crypto.randomUUID(),
+    label,
+    features,
+    created: Date.now()
+  });
+
+  localStorage.setItem('facesDB', JSON.stringify(facesDB));
+  renderList();
+
+  src.delete(); gray.delete(); roi.delete(); faces.delete();
+}
+
+function renderList() {
+  faceList.innerHTML = '';
+  facesDB.faces.forEach(f => {
+    let div = document.createElement('div');
+    div.className = "flex justify-between border p-2 rounded";
+    div.innerHTML = `
+      <span>${f.label}</span>
+      <div class="space-x-2">
+        <button class="text-blue-600" onclick="editFace('${f.id}')">Edit</button>
+        <button class="text-red-600" onclick="deleteFace('${f.id}')">Delete</button>
+      </div>
+    `;
+    faceList.appendChild(div);
+  });
+}
+
+function editFace(id) {
+  let f = facesDB.faces.find(x => x.id === id);
+  let newLabel = prompt("Label baru:", f.label);
+  if (newLabel) {
+    f.label = newLabel;
+    localStorage.setItem('facesDB', JSON.stringify(facesDB));
+    renderList();
+  }
+}
+
+function deleteFace(id) {
+  facesDB.faces = facesDB.faces.filter(x => x.id !== id);
+  localStorage.setItem('facesDB', JSON.stringify(facesDB));
+  renderList();
+}
+
+renderList();
+
+/* ===============================
+   BENCHMARK MODULE
+================================ */
+async function runBenchmark() {
+  benchmarkTable.innerHTML = '';
+
+  let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  // BASE64
+  let t0 = performance.now();
+  let base64 = canvas.toDataURL();
+  let t1 = performance.now();
+  addRow("Base64", t1 - t0, base64.length + " bytes");
+
+  // Uint8Array
+  t0 = performance.now();
+  let buffer = new Uint8Array(imgData.data.buffer);
+  t1 = performance.now();
+  addRow("Uint8Array", t1 - t0, buffer.byteLength + " bytes");
+
+  // ImageBitmap
+  t0 = performance.now();
+  let bitmap = await createImageBitmap(canvas);
+  t1 = performance.now();
+  addRow("ImageBitmap", t1 - t0, "GPU-managed");
+}
+
+function addRow(name, time, size) {
+  let tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="border p-2">${name}</td>
+    <td class="border p-2">${time.toFixed(2)}</td>
+    <td class="border p-2">${size}</td>
+  `;
+  benchmarkTable.appendChild(tr);
+}
+</script>
+
+</body>
+</html>
