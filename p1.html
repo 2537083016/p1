@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Real-time Face Attendance + Benchmark</title>
+<title>Face Attendance – p1 Style</title>
 
 <!-- Tailwind -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -14,79 +14,100 @@
 <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
 </head>
 
-<body class="bg-gray-100 p-4">
-
-<div class="max-w-7xl mx-auto space-y-6">
+<body class="bg-slate-100 min-h-screen">
 
 <!-- HEADER -->
-<div class="bg-white p-4 rounded-xl shadow">
-<h1 class="text-2xl font-bold">Face Attendance (Client-Side)</h1>
-<p class="text-sm text-gray-600">
-OpenCV.js · Real-time Verification · Benchmark Optimasi Data
-</p>
-</div>
+<header class="bg-white shadow p-4">
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold">Face Attendance System</h1>
+    <p class="text-sm text-gray-500">
+      Real-time Verification · OpenCV.js · Client-side
+    </p>
+  </div>
+</header>
 
 <!-- MAIN -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+<main class="max-w-6xl mx-auto p-4 space-y-6">
 
-<!-- VIDEO -->
-<div class="bg-white p-4 rounded-xl shadow">
-<h2 class="font-semibold mb-2">Webcam</h2>
-<video id="video" autoplay muted class="rounded w-full"></video>
-<canvas id="canvas" class="hidden"></canvas>
+<!-- CAMERA CARD -->
+<section class="bg-white rounded-xl shadow p-4">
+  <h2 class="font-semibold mb-2">Live Camera</h2>
 
-<div class="flex gap-2 mt-3">
-<input id="nameInput" placeholder="Nama"
- class="border px-3 py-2 rounded w-full">
-<button onclick="registerFace()"
- class="bg-blue-600 text-white px-4 rounded">Register</button>
-</div>
+  <div class="grid md:grid-cols-2 gap-4 items-center">
 
-<div class="flex gap-2 mt-2">
-<button onclick="startScan()"
- class="bg-green-600 text-white px-4 py-2 rounded">Start Scan</button>
-<button onclick="stopScan()"
- class="bg-red-600 text-white px-4 py-2 rounded">Stop</button>
-</div>
-</div>
+    <!-- VIDEO -->
+    <div class="relative">
+      <video id="video" autoplay muted
+        class="rounded-lg border w-full"></video>
+      <canvas id="canvas" class="hidden"></canvas>
+    </div>
 
-<!-- DATA -->
-<div class="bg-white p-4 rounded-xl shadow">
-<h2 class="font-semibold mb-2">Presensi</h2>
-<div id="attendanceList" class="space-y-2 text-sm"></div>
-</div>
+    <!-- CONTROL -->
+    <div class="space-y-3">
+      <input id="nameInput"
+        placeholder="Nama Wajah"
+        class="w-full border rounded px-3 py-2">
 
-</div>
+      <div class="flex gap-2">
+        <button onclick="registerFace()"
+          class="bg-blue-600 text-white px-4 py-2 rounded w-full">
+          Register Face
+        </button>
+        <button onclick="startScan()"
+          class="bg-green-600 text-white px-4 py-2 rounded w-full">
+          Start Scan
+        </button>
+      </div>
+
+      <button onclick="stopScan()"
+        class="bg-red-500 text-white px-4 py-2 rounded w-full">
+        Stop Scan
+      </button>
+
+      <p class="text-xs text-gray-500">
+        Sistem akan berhenti otomatis jika wajah terverifikasi.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ATTENDANCE -->
+<section class="bg-white rounded-xl shadow p-4">
+  <h2 class="font-semibold mb-2">Attendance Log</h2>
+  <div id="attendanceList"
+    class="space-y-2 text-sm"></div>
+</section>
 
 <!-- BENCHMARK -->
-<div class="bg-white p-4 rounded-xl shadow">
-<div class="flex justify-between">
-<h2 class="font-semibold">Benchmark Konversi Frame</h2>
-<button onclick="runBenchmark()"
- class="bg-purple-600 text-white px-4 py-2 rounded">
-Run Benchmark
-</button>
-</div>
+<section class="bg-white rounded-xl shadow p-4">
+  <div class="flex justify-between items-center">
+    <h2 class="font-semibold">Performance Benchmark</h2>
+    <button onclick="runBenchmark()"
+      class="bg-purple-600 text-white px-4 py-2 rounded">
+      Run Benchmark
+    </button>
+  </div>
 
-<table class="w-full text-sm mt-4 border">
-<thead class="bg-gray-200">
-<tr>
-<th class="border p-2">Metode</th>
-<th class="border p-2">Execution Time (ms)</th>
-</tr>
-</thead>
-<tbody id="benchmarkTable"></tbody>
-</table>
+  <table class="w-full text-sm mt-4 border">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="border p-2">Method</th>
+        <th class="border p-2">Execution Time (ms)</th>
+      </tr>
+    </thead>
+    <tbody id="benchmarkTable"></tbody>
+  </table>
 
-<canvas id="benchmarkChart" class="mt-4"></canvas>
-</div>
+  <canvas id="benchmarkChart" class="mt-4"></canvas>
+</section>
 
-</div>
+</main>
 
 <script>
-/* ======================================================
+/* ================================
    GLOBAL STATE
-====================================================== */
+================================ */
 let video = document.getElementById("video");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -96,208 +117,198 @@ let scanning = false;
 let facesDB = JSON.parse(localStorage.getItem("facesDB")) || [];
 let attendanceDB = JSON.parse(localStorage.getItem("attendanceDB")) || [];
 
-/* ======================================================
+/* ================================
    CAMERA
-====================================================== */
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(stream => video.srcObject = stream);
+================================ */
+navigator.mediaDevices.getUserMedia({ video:true })
+.then(s => video.srcObject = s);
 
-/* ======================================================
+/* ================================
    INIT OPENCV
-====================================================== */
-function waitCV() {
- if (cv && cv.Mat) initCV();
- else setTimeout(waitCV, 100);
+================================ */
+function waitCV(){
+  if(cv && cv.Mat) initCV();
+  else setTimeout(waitCV,100);
 }
 waitCV();
 
-function initCV() {
- cap = new cv.VideoCapture(video);
- classifier = new cv.CascadeClassifier();
-
- let ok = classifier.load(
- "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml"
- );
- if (!ok) alert("Haar Cascade gagal dimuat!");
+function initCV(){
+  cap = new cv.VideoCapture(video);
+  classifier = new cv.CascadeClassifier();
+  const ok = classifier.load(
+   "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml"
+  );
+  if(!ok) alert("Haarcascade gagal dimuat");
 }
 
-/* ======================================================
-   FEATURE EXTRACTION (Histogram)
-====================================================== */
-function extractHist(mat) {
- let hist = new cv.Mat();
- cv.calcHist(mat, [0], new cv.Mat(),
- hist, [32], [0,256]);
- cv.normalize(hist, hist);
- return Array.from(hist.data32F);
+/* ================================
+   FEATURE (Histogram)
+================================ */
+function extractHist(mat){
+  let hist = new cv.Mat();
+  cv.calcHist(mat,[0],new cv.Mat(),
+    hist,[32],[0,256]);
+  cv.normalize(hist,hist);
+  return Array.from(hist.data32F);
 }
 
-/* ======================================================
-   FACE DETECTION HELPER
-====================================================== */
-function detectFace() {
- canvas.width = video.videoWidth;
- canvas.height = video.videoHeight;
- ctx.drawImage(video,0,0);
+/* ================================
+   FACE DETECTION
+================================ */
+function detectFace(){
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video,0,0);
 
- let src = cv.imread(canvas);
- let gray = new cv.Mat();
- cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+  let src = cv.imread(canvas);
+  let gray = new cv.Mat();
+  cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
 
- let faces = new cv.RectVector();
- classifier.detectMultiScale(gray, faces);
+  let faces = new cv.RectVector();
+  classifier.detectMultiScale(gray,faces);
 
- if (faces.size() === 0) {
- src.delete(); gray.delete(); faces.delete();
- return null;
- }
+  if(faces.size()===0){
+    src.delete(); gray.delete(); faces.delete();
+    return null;
+  }
+  let f = faces.get(0);
+  let roi = gray.roi(f);
 
- let f = faces.get(0);
- let roi = gray.roi(f);
-
- src.delete(); gray.delete(); faces.delete();
- return roi;
+  src.delete(); gray.delete(); faces.delete();
+  return roi;
 }
 
-/* ======================================================
-   CRUD - REGISTER
-====================================================== */
-function registerFace() {
- let name = nameInput.value.trim();
- if (!name) return alert("Nama kosong");
+/* ================================
+   REGISTER
+================================ */
+function registerFace(){
+  let name = nameInput.value.trim();
+  if(!name) return alert("Nama kosong");
 
- let face = detectFace();
- if (!face) return alert("Wajah tidak terdeteksi");
+  let face = detectFace();
+  if(!face) return alert("Wajah tidak terdeteksi");
 
- facesDB.push({
- id: crypto.randomUUID(),
- name,
- hist: extractHist(face)
- });
+  facesDB.push({
+    id:crypto.randomUUID(),
+    name,
+    hist:extractHist(face)
+  });
 
- localStorage.setItem("facesDB", JSON.stringify(facesDB));
- face.delete();
- alert("Wajah tersimpan");
+  localStorage.setItem("facesDB",JSON.stringify(facesDB));
+  face.delete();
+  alert("Wajah berhasil diregistrasi");
 }
 
-/* ======================================================
-   REAL-TIME VERIFICATION LOOP
-====================================================== */
-function startScan() {
- scanning = true;
- requestAnimationFrame(scanLoop);
+/* ================================
+   REAL-TIME SCAN (STOP LOGIC)
+================================ */
+function startScan(){
+  scanning = true;
+  requestAnimationFrame(scanLoop);
+}
+function stopScan(){ scanning=false; }
+
+function scanLoop(){
+  if(!scanning) return;
+
+  let face = detectFace();
+  if(face){
+    let h = extractHist(face);
+    let best={score:-1,name:null};
+
+    facesDB.forEach(d=>{
+      let s = cv.compareHist(
+        cv.matFromArray(32,1,cv.CV_32F,h),
+        cv.matFromArray(32,1,cv.CV_32F,d.hist),
+        cv.HISTCMP_CORREL
+      );
+      if(s>best.score) best={score:s,name:d.name};
+    });
+
+    if(best.score>0.8){
+      scanning=false;
+      attendanceDB.push({
+        name:best.name,
+        time:new Date().toLocaleString()
+      });
+      localStorage.setItem(
+        "attendanceDB",JSON.stringify(attendanceDB));
+      renderAttendance();
+      alert("Presensi berhasil: "+best.name);
+    }
+    face.delete();
+  }
+  requestAnimationFrame(scanLoop);
 }
 
-function stopScan() {
- scanning = false;
-}
-
-function scanLoop() {
- if (!scanning) return;
-
- let face = detectFace();
- if (face) {
- let hist = extractHist(face);
- let best = { score:-1, name:null };
-
- facesDB.forEach(d => {
- let score = cv.compareHist(
- cv.matFromArray(32,1,cv.CV_32F,hist),
- cv.matFromArray(32,1,cv.CV_32F,d.hist),
- cv.HISTCMP_CORREL
- );
- if (score > best.score) best = {score,name:d.name};
- });
-
- // THRESHOLD VERIFICATION
- if (best.score > 0.8) {
- scanning = false;
- attendanceDB.push({
- name: best.name,
- time: new Date().toLocaleString()
- });
- localStorage.setItem("attendanceDB",
- JSON.stringify(attendanceDB));
- renderAttendance();
- alert("Presensi berhasil: " + best.name);
- }
- face.delete();
- }
- requestAnimationFrame(scanLoop);
-}
-
-/* ======================================================
+/* ================================
    ATTENDANCE UI
-====================================================== */
-function renderAttendance() {
- attendanceList.innerHTML = "";
- attendanceDB.forEach(a=>{
- let d=document.createElement("div");
- d.className="border p-2 rounded";
- d.textContent=`${a.name} - ${a.time}`;
- attendanceList.appendChild(d);
- });
+================================ */
+function renderAttendance(){
+  attendanceList.innerHTML="";
+  attendanceDB.forEach(a=>{
+    let d=document.createElement("div");
+    d.className="border rounded p-2";
+    d.textContent=`${a.name} – ${a.time}`;
+    attendanceList.appendChild(d);
+  });
 }
 renderAttendance();
 
-/* ======================================================
-   BENCHMARK MODULE (RISET INTI)
-====================================================== */
-async function runBenchmark() {
- let results=[];
+/* ================================
+   BENCHMARK (Research Core)
+================================ */
+async function runBenchmark(){
+  let res=[];
 
- // Base64 pipeline
- let t0=performance.now();
- let b64=canvas.toDataURL();
- let img=new Image();
- img.src=b64; await img.decode();
- let m1=cv.imread(img); m1.delete();
- let t1=performance.now();
- results.push({name:"Base64",time:t1-t0});
+  let t0=performance.now();
+  let b64=canvas.toDataURL();
+  let img=new Image(); img.src=b64;
+  await img.decode();
+  let m1=cv.imread(img); m1.delete();
+  let t1=performance.now();
+  res.push({n:"Base64",t:t1-t0});
 
- // Uint8Array pipeline
- t0=performance.now();
- let data=ctx.getImageData(0,0,canvas.width,canvas.height);
- let m2=cv.matFromImageData(data); m2.delete();
- t1=performance.now();
- results.push({name:"Uint8Array",time:t1-t0});
+  t0=performance.now();
+  let d=ctx.getImageData(0,0,canvas.width,canvas.height);
+  let m2=cv.matFromImageData(d); m2.delete();
+  t1=performance.now();
+  res.push({n:"Uint8Array",t:t1-t0});
 
- // ImageBitmap pipeline
- t0=performance.now();
- let bmp=await createImageBitmap(video);
- let off=new OffscreenCanvas(bmp.width,bmp.height);
- off.getContext("2d").drawImage(bmp,0,0);
- let m3=cv.imread(off); m3.delete();
- t1=performance.now();
- results.push({name:"ImageBitmap",time:t1-t0});
+  t0=performance.now();
+  let bmp=await createImageBitmap(video);
+  let off=new OffscreenCanvas(bmp.width,bmp.height);
+  off.getContext("2d").drawImage(bmp,0,0);
+  let m3=cv.imread(off); m3.delete();
+  t1=performance.now();
+  res.push({n:"ImageBitmap",t:t1-t0});
 
- renderBenchmark(results);
+  renderBenchmark(res);
 }
 
-/* ======================================================
+/* ================================
    BENCHMARK UI
-====================================================== */
+================================ */
 let chart;
-function renderBenchmark(r) {
- benchmarkTable.innerHTML="";
- r.forEach(x=>{
- let tr=document.createElement("tr");
- tr.innerHTML=`<td class="border p-2">${x.name}</td>
- <td class="border p-2">${x.time.toFixed(2)}</td>`;
- benchmarkTable.appendChild(tr);
- });
+function renderBenchmark(r){
+  benchmarkTable.innerHTML="";
+  r.forEach(x=>{
+    benchmarkTable.innerHTML+=
+     `<tr><td class="border p-2">${x.n}</td>
+      <td class="border p-2">${x.t.toFixed(2)}</td></tr>`;
+  });
 
- if(chart) chart.destroy();
- chart=new Chart(benchmarkChart,{
- type:"bar",
- data:{
- labels:r.map(x=>x.name),
- datasets:[{
- label:"Execution Time (ms)",
- data:r.map(x=>x.time)
- }]
- }
- });
+  if(chart) chart.destroy();
+  chart=new Chart(benchmarkChart,{
+    type:"bar",
+    data:{
+      labels:r.map(x=>x.n),
+      datasets:[{
+        label:"Execution Time (ms)",
+        data:r.map(x=>x.t)
+      }]
+    }
+  });
 }
 </script>
 
